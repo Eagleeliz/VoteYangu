@@ -1,36 +1,97 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# VoteBridge
 
-## Getting Started
+**One Audience. Every Channel.**
 
-First, run the development server:
+Unified audience engagement for web + USSD (Africa's Talking) + SMS, backed by Supabase.
+
+## What you get in this MVP
+
+- Organiser signup / login (Supabase Auth)
+- Create event + poll → **QR code** to the vote page
+- Online voting + live results (online vs USSD split)
+- Audience questions + organiser moderation
+- Africa's Talking **USSD** callback + **SMS** vote/question confirmations
+
+## 1. Supabase setup (2 min)
+
+1. Create a project at [supabase.com](https://supabase.com)
+2. Open **SQL Editor** → paste and run `supabase/schema.sql`
+3. Copy Project URL, `anon` key, and `service_role` key from **Settings → API**
+
+## 2. Environment
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Fill in:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+PHONE_HASH_SALT=any-long-random-string
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+AFRICASTALKING_USERNAME=sandbox
+AFRICASTALKING_API_KEY=
+AFRICASTALKING_SMS_FROM=VoteBridge
+AFRICASTALKING_USSD_CODE=*384*123#
+```
 
-## Learn More
+Without AT credentials, SMS is logged to the console / `sms_logs` (votes still succeed).
 
-To learn more about Next.js, take a look at the following resources:
+## 3. Run
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm install
+npm run dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Open [http://localhost:3000](http://localhost:3000)
 
-## Deploy on Vercel
+## 4. Demo flow (hackathon)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Sign up as organiser → Dashboard
+2. Create **Kenya Music Awards 2026** poll with Artist A/B/C
+3. Scan / open the **QR** → vote online
+4. Point Africa's Talking USSD callback to:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```text
+POST https://YOUR_PUBLIC_URL/api/integrations/africastalking/ussd
+```
+
+5. Dial your sandbox USSD code → Vote / Ask / Results
+6. Dashboard shows unified Online + USSD counts
+
+### Simulate USSD locally
+
+```bash
+curl -X POST http://localhost:3000/api/integrations/africastalking/ussd \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "sessionId=test-1&phoneNumber=+254700000001&text="
+```
+
+Then continue the session by appending menu choices, e.g. `text=1`, `text=1*1`, `text=1*1*1`, `text=1*1*1*1`.
+
+## Africa's Talking
+
+| Channel | Endpoint / usage |
+|--------|-------------------|
+| USSD | `POST /api/integrations/africastalking/ussd` |
+| SMS | Sent after USSD vote / question (non-blocking) |
+
+## Project structure
+
+```text
+src/app/                  # Next.js App Router pages + API
+src/lib/africastalking/   # USSD state machine + SMS
+src/lib/supabase/         # Browser / server / service clients
+supabase/schema.sql       # Database + RLS
+```
+
+## Notes
+
+- Duplicate votes blocked with `UNIQUE(poll_id, voter_hash)`
+- Phone numbers are hashed; raw numbers never shown to organisers
+- A successful vote stays valid even if SMS fails
