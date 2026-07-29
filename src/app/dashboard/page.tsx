@@ -135,7 +135,7 @@ export default function DashboardPage() {
     const data = await res.json();
 
     if (!res.ok) {
-      setError(data.error || "Failed to delete poll");
+      setError(data.error || "Failed to delete the poll");
       setDeletingPollId(null);
       return;
     }
