@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { handleUssd } from "@/lib/africastalking/ussd";
 
+export async function GET() {
+  return new NextResponse("Africa's Talking USSD callback is ready.", {
+    status: 200,
+    headers: { "Content-Type": "text/plain" },
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const contentType = req.headers.get("content-type") || "";
