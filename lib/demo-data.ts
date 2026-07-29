@@ -1,0 +1,195 @@
+import type {
+  Event,
+  Poll,
+  PollOption,
+  Question,
+  EventAnalytics,
+  User,
+  Organiser,
+} from "@/types";
+
+export const demoUser: User = {
+  id: "usr-001",
+  name: "John Doe",
+  email: "john@votebridge.test",
+  phone: "+254712345678",
+  role: "ORGANISER",
+  createdAt: "2026-01-15T10:00:00Z",
+  updatedAt: "2026-07-29T08:00:00Z",
+};
+
+export const demoOrganiser: Organiser = {
+  id: "org-001",
+  userId: "usr-001",
+  organisationName: "VoteBridge Events",
+  description: "Official event management",
+  createdAt: "2026-01-15T10:00:00Z",
+  updatedAt: "2026-07-29T08:00:00Z",
+};
+
+export const demoEvent: Event = {
+  id: "evt-001",
+  organiserId: "org-001",
+  name: "Kenya Music Awards 2026",
+  description: "The official audience engagement platform for the Kenya Music Awards.",
+  imageUrl: "https://images.unsplash.com/photo-1493225255756-d9584f8606e9?w=1200&h=400&fit=crop",
+  startAt: "2026-07-29T18:00:00Z",
+  endAt: "2026-07-30T02:00:00Z",
+  status: "LIVE",
+  createdAt: "2026-07-01T08:00:00Z",
+  updatedAt: "2026-07-29T18:00:00Z",
+};
+
+export const demoPoll: Poll = {
+  id: "poll-001",
+  eventId: "evt-001",
+  title: "Who should win Best New Artist?",
+  description: "Vote for your favourite emerging artist",
+  category: "Music",
+  startAt: "2026-07-29T18:00:00Z",
+  endAt: "2026-07-30T02:00:00Z",
+  status: "ACTIVE",
+  votingRule: "ONE_VOTE_PER_USER",
+  createdAt: "2026-07-01T08:00:00Z",
+  updatedAt: "2026-07-29T18:00:00Z",
+};
+
+export const demoPollOptions: PollOption[] = [
+  {
+    id: "opt-1",
+    pollId: "poll-001",
+    name: "Artist A",
+    description: "Nairobi-based afrobeat sensation",
+    displayOrder: 1,
+    voteCount: 8234,
+    percentage: 47.8,
+    createdAt: "2026-07-01T08:00:00Z",
+    updatedAt: "2026-07-29T18:00:00Z",
+  },
+  {
+    id: "opt-2",
+    pollId: "poll-001",
+    name: "Artist B",
+    description: "Coastal bongo flava star",
+    displayOrder: 2,
+    voteCount: 6120,
+    percentage: 35.5,
+    createdAt: "2026-07-01T08:00:00Z",
+    updatedAt: "2026-07-29T18:00:00Z",
+  },
+  {
+    id: "opt-3",
+    pollId: "poll-001",
+    name: "Artist C",
+    description: "Rising gengetone artist",
+    displayOrder: 3,
+    voteCount: 2880,
+    percentage: 16.7,
+    createdAt: "2026-07-01T08:00:00Z",
+    updatedAt: "2026-07-29T18:00:00Z",
+  },
+];
+
+export const demoQuestions: Question[] = [
+  {
+    id: "q1",
+    eventId: "evt-001",
+    questionText: "What inspired your latest album?",
+    channel: "ONLINE",
+    submitterHash: "hash-online-1",
+    status: "APPROVED",
+    upvotes: 342,
+    featured: true,
+    createdAt: "2026-07-29T19:00:00Z",
+    updatedAt: "2026-07-29T20:00:00Z",
+  },
+  {
+    id: "q2",
+    eventId: "evt-001",
+    questionText: "When are you performing in Mombasa?",
+    channel: "USSD",
+    submitterHash: "hash-ussd-1",
+    status: "APPROVED",
+    upvotes: 287,
+    featured: false,
+    createdAt: "2026-07-29T19:15:00Z",
+    updatedAt: "2026-07-29T20:00:00Z",
+  },
+  {
+    id: "q3",
+    eventId: "evt-001",
+    questionText: "Who is your biggest musical influence?",
+    channel: "ONLINE",
+    submitterHash: "hash-online-2",
+    status: "APPROVED",
+    upvotes: 198,
+    featured: false,
+    createdAt: "2026-07-29T19:30:00Z",
+    updatedAt: "2026-07-29T20:00:00Z",
+  },
+  {
+    id: "q4",
+    eventId: "evt-001",
+    questionText: "Will you release a new album this year?",
+    channel: "USSD",
+    submitterHash: "hash-ussd-2",
+    status: "PENDING",
+    upvotes: 156,
+    featured: false,
+    createdAt: "2026-07-29T19:45:00Z",
+    updatedAt: "2026-07-29T19:45:00Z",
+  },
+  {
+    id: "q5",
+    eventId: "evt-001",
+    questionText: "How do you handle stage fright?",
+    channel: "ONLINE",
+    submitterHash: "hash-online-3",
+    status: "APPROVED",
+    upvotes: 89,
+    featured: false,
+    createdAt: "2026-07-29T20:00:00Z",
+    updatedAt: "2026-07-29T20:00:00Z",
+  },
+];
+
+export const demoAnalytics: EventAnalytics = {
+  totalVotes: 17234,
+  totalQuestions: 1240,
+  onlineVotes: 10234,
+  ussdVotes: 7000,
+  ussdRate: 40.6,
+  onlineQuestions: 890,
+  ussdQuestions: 350,
+  completionRate: 87.3,
+  sessionsStarted: 8200,
+  sessionsCompleted: 7159,
+};
+
+export const demoEventsList: Event[] = [
+  demoEvent,
+  {
+    id: "evt-002",
+    organiserId: "org-001",
+    name: "Nairobi Fashion Week",
+    description: "East Africa's biggest fashion showcase",
+    startAt: "2026-08-15T10:00:00Z",
+    endAt: "2026-08-20T22:00:00Z",
+    status: "SCHEDULED",
+    createdAt: "2026-07-10T08:00:00Z",
+    updatedAt: "2026-07-10T08:00:00Z",
+  },
+  {
+    id: "evt-003",
+    organiserId: "org-001",
+    name: "KPL Fan Choice Awards",
+    description: "Kenyan Premier League fan awards",
+    startAt: "2026-06-20T14:00:00Z",
+    endAt: "2026-06-20T20:00:00Z",
+    status: "ENDED",
+    createdAt: "2026-05-01T08:00:00Z",
+    updatedAt: "2026-06-21T08:00:00Z",
+  },
+];
+
+export const voteTrendData = [30, 45, 35, 55, 40, 70, 65, 80, 75, 90, 85, 100];
