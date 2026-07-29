@@ -7,7 +7,7 @@ export async function GET() {
 
     const { data: events, error } = await admin
       .from("events")
-      .select("*, polls(*, poll_options(id))")
+      .select("*, polls(*, poll_options(id, name, display_order))")
       .order("created_at", { ascending: false });
 
     if (error) throw error;

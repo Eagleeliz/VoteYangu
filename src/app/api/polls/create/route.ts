@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Failed to create options" }, { status: 500 });
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const appUrl = req.nextUrl.origin;
     const voteUrl = `${appUrl}/vote/${poll.slug}`;
     const eventUrl = `${appUrl}/e/${event.slug}`;
 

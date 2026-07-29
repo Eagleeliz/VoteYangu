@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { PollQR } from "@/components/PollQR";
-import type { Event, Poll, Question } from "@/lib/types";
+import type { Event, Poll, PollOption, Question } from "@/lib/types";
 
 type CreatedPayload = {
   event: Event;
@@ -14,8 +14,12 @@ type CreatedPayload = {
 };
 
 type EventRow = Event & {
-  polls: Array<Poll & { poll_options: { id: string }[] }>;
+  polls: Array<Poll & { poll_options: PollOption[] }>;
 };
+
+const DEFAULT_EVENT_NAME = "Kenya Music Awards 2026";
+const DEFAULT_POLL_TITLE = "Who will win the Runway Crown?";
+const DEFAULT_OPTIONS = "Artist A\nArtist B\nArtist C";
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
@@ -24,13 +28,13 @@ export default function DashboardPage() {
   const [created, setCreated] = useState<CreatedPayload | null>(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deletingPollId, setDeletingPollId] = useState<string | null>(null);
+  const [editingPollId, setEditingPollId] = useState<string | null>(null);
   const [stats, setStats] = useState({ total: 0, online: 0, ussd: 0 });
 
-  const [eventName, setEventName] = useState("Kenya Music Awards 2026");
-  const [pollTitle, setPollTitle] = useState(
-    "Who is Kenya's Favourite Emerging Artist?"
-  );
-  const [optionsText, setOptionsText] = useState("Artist A\nArtist B\nArtist C");
+  const [eventName, setEventName] = useState(DEFAULT_EVENT_NAME);
+  const [pollTitle, setPollTitle] = useState(DEFAULT_POLL_TITLE);
+  const [optionsText, setOptionsText] = useState(DEFAULT_OPTIONS);
 
   async function load() {
     const res = await fetch("/api/dashboard");
@@ -47,36 +51,66 @@ export default function DashboardPage() {
     void load();
   }, []);
 
-  async function onCreate(e: FormEvent) {
+  function resetForm() {
+    setEditingPollId(null);
+    setEventName(DEFAULT_EVENT_NAME);
+    setPollTitle(DEFAULT_POLL_TITLE);
+    setOptionsText(DEFAULT_OPTIONS);
+    setError("");
+  }
+
+  function startEdit(event: EventRow) {
+    const poll = event.polls?.[0];
+    if (!poll) return;
+
+    const options = [...(poll.poll_options || [])]
+      .sort((a, b) => a.display_order - b.display_order)
+      .map((o) => o.name)
+      .join("\n");
+
+    setEditingPollId(poll.id);
+    setEventName(event.name);
+    setPollTitle(poll.title);
+    setOptionsText(options);
+    setCreated(null);
+    setError("");
+    document.getElementById("create")?.scrollIntoView({ behavior: "smooth" });
+  }
+
+  async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setSaving(true);
     setError("");
-    setCreated(null);
+    if (!editingPollId) setCreated(null);
 
     const options = optionsText
       .split("\n")
       .map((o) => o.trim())
       .filter(Boolean);
 
-    const res = await fetch("/api/polls/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        eventName,
-        pollTitle,
-        options,
-      }),
-    });
+    const res = await fetch(
+      editingPollId ? `/api/polls/${editingPollId}` : "/api/polls/create",
+      {
+        method: editingPollId ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventName,
+          pollTitle,
+          options,
+        }),
+      }
+    );
 
     const data = await res.json();
     setSaving(false);
 
     if (!res.ok) {
-      setError(data.error || "Failed to create poll");
+      setError(data.error || (editingPollId ? "Failed to update poll" : "Failed to create poll"));
       return;
     }
 
     setCreated(data);
+    if (editingPollId) setEditingPollId(null);
     await load();
   }
 
@@ -87,6 +121,29 @@ export default function DashboardPage() {
       body: JSON.stringify({ action }),
     });
     await load();
+  }
+
+  async function deletePoll(id: string, name: string) {
+    if (!window.confirm(`Delete the event "${name}", its poll, and all votes? This removes it from web and USSD and cannot be undone.`)) {
+      return;
+    }
+
+    setDeletingPollId(id);
+    setError("");
+
+    const res = await fetch(`/api/polls/${id}`, { method: "DELETE" });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.error || "Failed to delete poll");
+      setDeletingPollId(null);
+      return;
+    }
+
+    if (created?.poll.id === id) setCreated(null);
+    if (editingPollId === id) resetForm();
+    await load();
+    setDeletingPollId(null);
   }
 
   if (loading) {
@@ -104,9 +161,16 @@ export default function DashboardPage() {
     <main className="min-h-screen pb-16">
       <SiteHeader
         right={
-          <Link href="/dashboard#create" className="btn btn-primary">
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => {
+              resetForm();
+              document.getElementById("create")?.scrollIntoView({ behavior: "smooth" });
+            }}
+          >
             New poll
-          </Link>
+          </button>
         }
       />
 
@@ -140,8 +204,22 @@ export default function DashboardPage() {
         </section>
 
         <section id="create" className="rise rise-delay-2 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <form onSubmit={onCreate} className="panel p-6 space-y-4">
-            <h2 className="font-display text-2xl">Create event + poll</h2>
+          <form onSubmit={onSubmit} className="panel p-6 space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <h2 className="font-display text-2xl">
+                {editingPollId ? "Edit event + poll" : "Create event + poll"}
+              </h2>
+              {editingPollId && (
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  style={{ padding: "0.45rem 0.9rem", fontSize: "0.85rem" }}
+                  onClick={resetForm}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
             <div>
               <label className="label">Event name</label>
               <input
@@ -168,6 +246,11 @@ export default function DashboardPage() {
                 onChange={(e) => setOptionsText(e.target.value)}
                 required
               />
+              {editingPollId && (
+                <p className="mt-2 text-xs" style={{ color: "var(--muted)" }}>
+                  Renaming an option keeps its votes. Removing a line deletes that option and its votes.
+                </p>
+              )}
             </div>
             {error && (
               <p className="text-sm" style={{ color: "var(--danger)" }}>
@@ -175,7 +258,13 @@ export default function DashboardPage() {
               </p>
             )}
             <button className="btn btn-primary" disabled={saving}>
-              {saving ? "Creating…" : "Create & generate QR"}
+              {saving
+                ? editingPollId
+                  ? "Saving…"
+                  : "Creating…"
+                : editingPollId
+                  ? "Save changes"
+                  : "Create & generate QR"}
             </button>
           </form>
 
@@ -201,7 +290,9 @@ export default function DashboardPage() {
               </>
             ) : (
               <p className="text-center" style={{ color: "var(--muted)" }}>
-                Create a poll to generate a scannable QR that opens the vote page.
+                {editingPollId
+                  ? "Save your changes to refresh the vote and event links."
+                  : "Create a poll to generate a scannable QR that opens the vote page."}
               </p>
             )}
           </div>
@@ -242,13 +333,36 @@ export default function DashboardPage() {
                       Public page
                     </Link>
                     {event.polls?.[0] && (
-                      <Link
-                        className="btn btn-ghost"
-                        style={{ padding: "0.45rem 0.9rem", fontSize: "0.85rem" }}
-                        href={`/vote/${event.polls[0].slug}`}
-                      >
-                        Vote / QR
-                      </Link>
+                      <>
+                        <Link
+                          className="btn btn-ghost"
+                          style={{ padding: "0.45rem 0.9rem", fontSize: "0.85rem" }}
+                          href={`/vote/${event.polls[0].slug}`}
+                        >
+                          Vote / QR
+                        </Link>
+                        <button
+                          className="btn btn-ghost"
+                          style={{ padding: "0.45rem 0.9rem", fontSize: "0.85rem" }}
+                          onClick={() => startEdit(event)}
+                        >
+                          {editingPollId === event.polls[0].id ? "Editing…" : "Edit"}
+                        </button>
+                        <button
+                          className="btn btn-ghost"
+                          style={{
+                            padding: "0.45rem 0.9rem",
+                            fontSize: "0.85rem",
+                            color: "var(--danger)",
+                          }}
+                          disabled={deletingPollId === event.polls[0].id}
+                          onClick={() =>
+                            deletePoll(event.polls[0].id, event.name)
+                          }
+                        >
+                          {deletingPollId === event.polls[0].id ? "Deleting…" : "Delete event"}
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
